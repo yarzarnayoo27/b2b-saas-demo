@@ -1,0 +1,133 @@
+// =========================
+// Multi-Tenant SaaS Core
+// =========================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// -------------------------
+// Organization
+// -------------------------
+model Organization {
+  id          String         @id @default(cuid())
+  name        String
+  slug        String         @unique
+  status      String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  memberships Membership[]
+  subscriptions Subscription[]
+  auditLogs   AuditLog[]
+}
+
+// -------------------------
+// User
+// -------------------------
+model User {
+  id        String        @id @default(cuid())
+  email     String        @unique
+  name      String
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  memberships Membership[]
+  auditLogs   AuditLog[]
+}
+
+// -------------------------
+// Membership (user ↔ org)
+// -------------------------
+model Membership {
+  id             String   @id @default(cuid())
+  user           User     @relation(fields: [userId], references: [id])
+  userId         String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  role           Role     @relation(fields: [roleId], references: [id])
+  roleId         String
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, organizationId]) // prevent duplicate membership
+}
+
+// -------------------------
+// Role
+// -------------------------
+model Role {
+  id          String           @id @default(cuid())
+  name        String
+  scope       String           // ORG | SYSTEM
+  memberships Membership[]
+  rolePermissions RolePermission[]
+}
+
+// -------------------------
+// Permission
+// -------------------------
+model Permission {
+  id              String           @id @default(cuid())
+  action          String
+  resource        String
+  rolePermissions RolePermission[]
+}
+
+// -------------------------
+// RolePermission (join table)
+// -------------------------
+model RolePermission {
+  role       Role       @relation(fields: [roleId], references: [id])
+  roleId     String
+  permission Permission @relation(fields: [permissionId], references: [id])
+  permissionId String
+
+  @@id([roleId, permissionId])
+}
+
+// -------------------------
+// Subscription
+// -------------------------
+model Subscription {
+  id              String         @id @default(cuid())
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  organizationId  String
+  plan            String
+  status          String
+  currentPeriodEnd DateTime
+
+  usageRecords UsageRecord[]
+}
+
+// -------------------------
+// UsageRecord
+// -------------------------
+model UsageRecord {
+  id             String       @id @default(cuid())
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  subscriptionId String
+  metric         String
+  value          Int
+  recordedAt     DateTime     @default(now())
+}
+
+// -------------------------
+// AuditLog
+// -------------------------
+model AuditLog {
+  id             String       @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  user           User         @relation(fields: [userId], references: [id])
+  userId         String
+  action         String
+  entity         String
+  entityId       String
+  createdAt      DateTime     @default(now())
+}
