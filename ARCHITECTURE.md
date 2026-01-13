@@ -84,3 +84,16 @@ This sequence diagram provides a **step-by-step view of key interactions**, such
 5. Async background jobs updating usage and audit logs
 
 ---
+
+## 6. ERD - NOBill Database
+
+![NOBill ERD](./assets/erd.png)
+
+This Entity-Relationship Diagram (ERD) shows the **database structure for NOBill**, including all tables, primary keys, foreign keys, and relationships:
+
+- **Organization** ↔ **User** via **Membership** (multi-tenant support)
+- **Role** ↔ **Permission** via **RolePermission** (Role-Based Access Control)
+- **Organization** ↔ **Subscription** ↔ **UsageRecord** (billing & usage tracking)
+- **AuditLog** captures all user and organization actions for auditing
+
+---

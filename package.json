@@ -1,0 +1,8 @@
+{
+  "name": "b2b-saas-demo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

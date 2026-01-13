@@ -1,77 +1,56 @@
-// =========================
-// Multi-Tenant SaaS Core
-// =========================
+generator client {
+  provider = "prisma-client-js"
+}
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-// -------------------------
-// Organization
-// -------------------------
 model Organization {
-  id          String         @id @default(cuid())
-  name        String
-  slug        String         @unique
-  status      String
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-
-  memberships Membership[]
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  status        String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  auditLogs     AuditLog[]
+  memberships   Membership[]
   subscriptions Subscription[]
-  auditLogs   AuditLog[]
 }
 
-// -------------------------
-// User
-// -------------------------
 model User {
-  id        String        @id @default(cuid())
-  email     String        @unique
-  name      String
-  isActive  Boolean       @default(true)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-
-  memberships Membership[]
-  auditLogs   AuditLog[]
-}
-
-// -------------------------
-// Membership (user ↔ org)
-// -------------------------
-model Membership {
-  id             String   @id @default(cuid())
-  user           User     @relation(fields: [userId], references: [id])
-  userId         String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId String
-  role           Role     @relation(fields: [roleId], references: [id])
-  roleId         String
-  createdAt      DateTime @default(now())
-
-  @@unique([userId, organizationId]) // prevent duplicate membership
-}
-
-// -------------------------
-// Role
-// -------------------------
-model Role {
-  id          String           @id @default(cuid())
+  id          String       @id @default(cuid())
+  email       String       @unique
   name        String
-  scope       String           // ORG | SYSTEM
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  auditLogs   AuditLog[]
   memberships Membership[]
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  roleId         String
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  role           Role         @relation(fields: [roleId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+
+  @@unique([userId, organizationId])
+}
+
+model Role {
+  id              String           @id @default(cuid())
+  name            String
+  scope           String
+  memberships     Membership[]
   rolePermissions RolePermission[]
 }
 
-// -------------------------
-// Permission
-// -------------------------
 model Permission {
   id              String           @id @default(cuid())
   action          String
@@ -79,55 +58,42 @@ model Permission {
   rolePermissions RolePermission[]
 }
 
-// -------------------------
-// RolePermission (join table)
-// -------------------------
 model RolePermission {
-  role       Role       @relation(fields: [roleId], references: [id])
-  roleId     String
-  permission Permission @relation(fields: [permissionId], references: [id])
+  roleId       String
   permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  role         Role       @relation(fields: [roleId], references: [id])
 
   @@id([roleId, permissionId])
 }
 
-// -------------------------
-// Subscription
-// -------------------------
 model Subscription {
-  id              String         @id @default(cuid())
-  organization    Organization   @relation(fields: [organizationId], references: [id])
-  organizationId  String
-  plan            String
-  status          String
+  id               String        @id @default(cuid())
+  organizationId   String
+  plan             String
+  status           String
   currentPeriodEnd DateTime
-
-  usageRecords UsageRecord[]
+  organization     Organization  @relation(fields: [organizationId], references: [id])
+  usageRecords     UsageRecord[]
 }
 
-// -------------------------
-// UsageRecord
-// -------------------------
 model UsageRecord {
   id             String       @id @default(cuid())
-  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
   subscriptionId String
   metric         String
   value          Int
   recordedAt     DateTime     @default(now())
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
 }
 
-// -------------------------
-// AuditLog
-// -------------------------
 model AuditLog {
   id             String       @id @default(cuid())
-  organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId String
-  user           User         @relation(fields: [userId], references: [id])
   userId         String
   action         String
   entity         String
   entityId       String
   createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
 }
